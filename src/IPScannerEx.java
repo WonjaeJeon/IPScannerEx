@@ -245,31 +245,43 @@ public class IPScannerEx extends JFrame {
 		tfRangeStart.setPreferredSize(new Dimension(30, 30));
 		tfRangeEnd.setPreferredSize(new Dimension(90, 30));
 
-		JComboBox combobox;
-
 		JLabel lbHostName = new JLabel("Hostname : ");
 
 		String myHostname = null;
 		try {
 			myHostname = InetAddress.getLocalHost().getHostName();
-		} catch (UnknownHostException e1) {
-			e1.printStackTrace();
+		} catch (UnknownHostException errhostname1) {
+
 		}
 
 		JTextField tfHostName = new JTextField(myHostname, 10);
 
-		JButton IPbt = new JButton("IP" + "ก่");
-		JComboBox cbOption = new JComboBox();
+		JButton buttonIP = new JButton("IP" + "ก่");
 
-		cbOption.addItem("/24");
-		cbOption.addItem("/26");
-		cbOption.addItem("/16");
+		// add buttonIP action listener
+		buttonIP.addActionListener(new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent arg0) {
+				try {
+					tfRangeStart.setText(InetAddress.getLocalHost().getHostAddress());
+					tfRangeEnd.setText(InetAddress.getLocalHost().getHostAddress());
+				} catch (UnknownHostException e) {
+					e.printStackTrace();
+				}
+			}
+		});
+
+		JComboBox netMaskCombo = new JComboBox();
+
+		netMaskCombo.addItem("/24");
+		netMaskCombo.addItem("/26");
+		netMaskCombo.addItem("/16");
 
 		JButton btStart = new JButton("Start");
 
 		tfHostName.setPreferredSize(new Dimension(90, 30));
-		IPbt.setPreferredSize(new Dimension(40, 30));
-		cbOption.setPreferredSize(new Dimension(90, 30));
+		buttonIP.setPreferredSize(new Dimension(40, 30));
+		netMaskCombo.setPreferredSize(new Dimension(90, 30));
 		btStart.setPreferredSize(new Dimension(90, 30));
 
 		toolbar1.add(IPRangeStart);
@@ -279,15 +291,15 @@ public class IPScannerEx extends JFrame {
 
 		toolbar2.add(lbHostName);
 		toolbar2.add(tfHostName);
-		toolbar2.add(IPbt);
-		toolbar2.add(cbOption);
+		toolbar2.add(buttonIP);
+		toolbar2.add(netMaskCombo);
 		toolbar2.add(btStart);
 
-		JPanel pane = new JPanel(new BorderLayout());
-		pane.add(toolbar1, BorderLayout.NORTH);
-		pane.add(toolbar2, BorderLayout.SOUTH);
+		JPanel toolBarPane = new JPanel(new BorderLayout());
+		toolBarPane.add(toolbar1, BorderLayout.NORTH);
+		toolBarPane.add(toolbar2, BorderLayout.SOUTH);
 
-		add(pane, BorderLayout.NORTH);
+		add(toolBarPane, BorderLayout.NORTH);
 
 		// toolbar end
 
