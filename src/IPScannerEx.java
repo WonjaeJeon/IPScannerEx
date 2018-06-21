@@ -4,7 +4,15 @@ import java.awt.FlowLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -15,6 +23,7 @@ import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
@@ -32,6 +41,8 @@ public class IPScannerEx extends JFrame {
 	JPanel statusPanel;
 	JLabel statusLabel;
 
+	String getPort;
+	
 	public IPScannerEx() {
 		super("Network Scanner");
 
@@ -213,8 +224,22 @@ public class IPScannerEx extends JFrame {
 		// ----------------------
 
 		// toolbar begin
+		InetAddress getLocalHost=null;
+		try {
+			getLocalHost= InetAddress.getLocalHost();
+		} catch (UnknownHostException errunknownhost) {
+			errunknownhost.printStackTrace();
+		}
+		
+		String myIp=null;
+		String myHostName=null;
+		myIp=getLocalHost.getHostAddress();
+		myHostName=getLocalHost.getHostName();
+		
+		String fixedIp = myIp.substring(0, myIp.lastIndexOf(".")+1);
+		
 		String ipRangeStartText = "192.168.0.0";
-		String ipRangeEndText = "192.168.3.255";
+		String ipRangeEndText = "192.168.0.255";
 
 		JToolBar toolbar1 = new JToolBar();
 		toolbar1.setLayout(new FlowLayout(FlowLayout.LEFT));
@@ -231,14 +256,7 @@ public class IPScannerEx extends JFrame {
 
 		JLabel lbHostName = new JLabel("Hostname : ");
 
-		String myHostname = null;
-		try {
-			myHostname = InetAddress.getLocalHost().getHostName();
-		} catch (UnknownHostException errhostname1) {
-
-		}
-
-		JTextField tfHostName = new JTextField(myHostname, 10);
+		JTextField tfHostName = new JTextField(myHostName, 10);
 
 		JButton buttonIP = new JButton("IP" + "ก่");
 
@@ -258,6 +276,7 @@ public class IPScannerEx extends JFrame {
 		JComboBox netMaskCombo = new JComboBox();
 
 		netMaskCombo.addItem("/24");
+		netMaskCombo.addItem("/26");
 		
 		JButton btStart = new JButton("Start");
 
@@ -289,40 +308,83 @@ public class IPScannerEx extends JFrame {
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		setVisible(true);
 
-		// set start action
+		// set start button action
 		btStart.addActionListener(new ActionListener() {
-
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
-				Pinging[] pg = new Pinging[254];
-				for (int i = 0; i < 253; i++) {
-					pg[i] = new Pinging("192.168.1." + (i + 1));
-					pg[i].start();
+				JOptionPane.showMessageDialog(null, "Start scanning...", "INFORMATION_MESSAGE", JOptionPane.INFORMATION_MESSAGE);
+				
+				Pinging[] pi = new Pinging[255];
+				for(int i=0; i<=254; i++) {
+					pi[i] = new Pinging(fixedIp + (i+1));
+					pi[i].start();
 				}
-				for (int i = 0; i < 255; i++) {
-					Object[] msg = pg[i].getMsg();
-					if (msg[1] == null) {
-						msg[1] = "n/a";
-						msg[2] = "n/s";
-						msg[3] = "n/s";
-					} else if (msg[3] == null) {
-						msg[3] = "n/a";
-					}
+				for(int i=0; i<=254; i++) {
+					Object[] msg = pi[i].getMsg();
 					if (msg[1] != null) {
+						//port SCanner
+						
+						ExecutorService es = Executors.newFixedThreadPool(20);
+						String ip = "127.0.0.1";
+						int timeout = 200;
+						ArrayList<Future<ScanResult>> futures = new ArrayList<>();
+						for (int port = 1; port <= 1024; port++) {
+							futures.add(portlsOpen(es, ip, port, timeout));
+						}
+						try {
+							es.awaitTermination(200L, TimeUnit.MILLISECONDS);
+							int openPorts = 0;
+							for (final Future<ScanResult> f: futures) {
+								if (f.get().isOpen()) {
+									openPorts++;
+									getPort = Integer.toString(f.get().getPort());
+									break;
+								}
+							}
+						} catch(Exception ee) {
+							ee.printStackTrace();
+						}
 
+						stats[i][4] = getPort;
+					}
+		
+					if (msg[1] == null) {
+						msg[3] = "[n/a]";
+						msg[1] = "[n/s]";
+						msg[2] = "[n/s]";
+						stats[i][4] = "[n/s]";
+					} else if (msg[3] == null) {
+						msg[2] = "[n/a]";
 					}
 					stats[i][0] = msg[0];
-					stats[i][1] = msg[1];
-					stats[i][2] = msg[2];
-					stats[i][3] = msg[3];
+					stats[i][1] = msg[3];
+					stats[i][2] = msg[1];
+					stats[i][3] = msg[2];
 				}
 				ipTable.repaint();
+				JOptionPane.showMessageDialog(null, "Scanning complete!", "INFORMATION_MESSAGE", JOptionPane.INFORMATION_MESSAGE);
+
 			}
 		});
 		// start action end
 
 	}
 
+	public static Future<ScanResult> portlsOpen(final ExecutorService es, final String ip, final int port, final int timeout){
+		return es.submit(new Callable<ScanResult>() {
+			public ScanResult call() {
+				try {
+					Socket socket = new Socket();
+					socket.connect(new InetSocketAddress(ip, port), timeout);
+					socket.close();
+					return new ScanResult(port, true);
+				}catch (Exception ex) {
+					return new ScanResult(port, false);
+				}
+			}
+		});
+	}
+	
 	public Object[][] initializeTableData() {
 		Object[][] results = new Object[254][5];
 		return results;
