@@ -40,7 +40,6 @@ public class IPScannerEx extends JFrame {
 		setJMenuBar(menuBar);
 
 		// add menu item
-
 		JMenu scanMenu = new JMenu("Scan");
 		JMenu gotoMenu = new JMenu("Go to");
 		JMenu commandsMenu = new JMenu("Commands");
@@ -56,7 +55,6 @@ public class IPScannerEx extends JFrame {
 		menuBar.add(helpMenu);
 
 		// set scan menu
-
 		JMenuItem loadFromFileAction = new JMenuItem("Load from file...");
 		JMenuItem exportAllAction = new JMenuItem("Export all...");
 		JMenuItem exportSelectionAction = new JMenuItem("Export selection...");
@@ -69,7 +67,6 @@ public class IPScannerEx extends JFrame {
 		scanMenu.add(quitAction);
 
 		// set goto menu
-
 		JMenuItem nextAliveHostAction = new JMenuItem("Next alive host");
 		JMenuItem nextOpenPortAction = new JMenuItem("Next open port");
 		JMenuItem nextDeadHostAction = new JMenuItem("Next dead host");
@@ -89,7 +86,6 @@ public class IPScannerEx extends JFrame {
 		gotoMenu.add(findAction);
 
 		// set commands menu-commands
-
 		JMenuItem showDetailsAction = new JMenuItem("Show details");
 		JMenuItem rescanIPAction = new JMenuItem("Rescan IP(s)");
 		JMenuItem deleteIPAction = new JMenuItem("Delete IP(s)");
@@ -107,7 +103,6 @@ public class IPScannerEx extends JFrame {
 		commandsMenu.add(openAction);
 
 		// set commands menu-open
-
 		JMenuItem editOpenersAction = new JMenuItem("Edit openers...");
 		JMenuItem windowsSharesAction = new JMenuItem("Windows Shares");
 		JMenuItem webBrowserAction = new JMenuItem("Web Browser");
@@ -130,7 +125,6 @@ public class IPScannerEx extends JFrame {
 		openAction.add(emailSampleAction);
 
 		// set favorites menu
-
 		JMenuItem addCurrentAction = new JMenuItem("Add current...");
 		JMenuItem manageFavoritesAction = new JMenuItem("Manage favorites...");
 
@@ -138,7 +132,6 @@ public class IPScannerEx extends JFrame {
 		favoritesMenu.add(manageFavoritesAction);
 
 		// set tools menu-tools
-
 		JMenuItem preferencesAction = new JMenuItem("Preferences...");
 		JMenuItem fetchersAction = new JMenuItem("Fetchers...");
 		JMenu selectionAction = new JMenu("Selection");
@@ -151,7 +144,6 @@ public class IPScannerEx extends JFrame {
 		toolsMenu.add(scanStatisticsAction);
 
 		// set tools menu-selection
-
 		JMenuItem aliveHostsAction = new JMenuItem("Alive hosts");
 		JMenuItem deadHostsAction = new JMenuItem("Dead hosts");
 		JMenuItem withOpenPortsAction = new JMenuItem("With open ports");
@@ -166,29 +158,25 @@ public class IPScannerEx extends JFrame {
 		selectionAction.add(invertSelectionAction);
 
 		// set help menu
-
 		JMenuItem gettingStartedAction = new JMenuItem("Getting Started");
 		JMenuItem officialWebsiteAction = new JMenuItem("Official Website");
 		JMenuItem FAQAction = new JMenuItem("FAQ");
 		JMenuItem reportAnIssueAction = new JMenuItem("Report an issue");
 		JMenuItem pluginsAction = new JMenuItem("Plugins");
 
-		// set scan-quit action
+		// set quit action
 
 		quitAction.addActionListener(new ActionListener() {
-
 			@Override
 			public void actionPerformed(ActionEvent e) {
 				System.exit(0);
 			}
 		});
-
 		// menu end
 
 		// ----------------------
 
 		// status bar begin
-
 		JPanel statusPanel = new JPanel();
 		statusPanel.setBorder(new BevelBorder(BevelBorder.LOWERED));
 		add(statusPanel, BorderLayout.SOUTH);
@@ -208,13 +196,11 @@ public class IPScannerEx extends JFrame {
 		readyLabel.setPreferredSize(new Dimension(300, 20));
 		displayLabel.setPreferredSize(new Dimension(150, 20));
 		threadLabel.setPreferredSize(new Dimension(150, 20));
-
 		// status bar end
 
 		// ----------------------
 
 		// table begin
-
 		String titles[] = new String[] { "IP", "Ping", "Hostname", "TTL", "Ports[0+]" };
 		Object[][] stats = initializeTableData();
 
@@ -222,13 +208,11 @@ public class IPScannerEx extends JFrame {
 
 		JScrollPane sp = new JScrollPane(ipTable);
 		add(sp, BorderLayout.CENTER);
-
 		// table end
 
 		// ----------------------
 
 		// toolbar begin
-
 		String ipRangeStartText = "192.168.0.0";
 		String ipRangeEndText = "192.168.3.255";
 
@@ -258,7 +242,7 @@ public class IPScannerEx extends JFrame {
 
 		JButton buttonIP = new JButton("IP" + "ก่");
 
-		// add buttonIP action listener
+		// set buttonIP action
 		buttonIP.addActionListener(new ActionListener() {
 			@Override
 			public void actionPerformed(ActionEvent arg0) {
@@ -274,9 +258,7 @@ public class IPScannerEx extends JFrame {
 		JComboBox netMaskCombo = new JComboBox();
 
 		netMaskCombo.addItem("/24");
-		netMaskCombo.addItem("/26");
-		netMaskCombo.addItem("/16");
-
+		
 		JButton btStart = new JButton("Start");
 
 		tfHostName.setPreferredSize(new Dimension(90, 30));
@@ -300,7 +282,6 @@ public class IPScannerEx extends JFrame {
 		toolBarPane.add(toolbar2, BorderLayout.SOUTH);
 
 		add(toolBarPane, BorderLayout.NORTH);
-
 		// toolbar end
 
 		// set default option
@@ -309,7 +290,6 @@ public class IPScannerEx extends JFrame {
 		setVisible(true);
 
 		// set start action
-
 		btStart.addActionListener(new ActionListener() {
 
 			@Override
@@ -339,7 +319,6 @@ public class IPScannerEx extends JFrame {
 				ipTable.repaint();
 			}
 		});
-
 		// start action end
 
 	}
