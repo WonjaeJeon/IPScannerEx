@@ -1,3 +1,4 @@
+
 public class ScanResult {
 	private int port;
 	

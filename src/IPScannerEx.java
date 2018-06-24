@@ -1,21 +1,23 @@
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
+import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.net.UnknownHostException;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
 import java.util.ArrayList;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
+import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFrame;
@@ -30,42 +32,36 @@ import javax.swing.JTable;
 import javax.swing.JTextField;
 import javax.swing.JToolBar;
 import javax.swing.border.BevelBorder;
+import javax.swing.DefaultComboBoxModel;
 
 public class IPScannerEx extends JFrame {
 
-	int threads = 0;
-
-	Pattern pattern;
-	Matcher matcher;
-
-	JPanel statusPanel;
-	JLabel statusLabel;
-
 	String getPort;
-	
+	static JTable jTable;
+	static Object[][] stats = new Object[254][5];
+
 	public IPScannerEx() {
 		super("Network Scanner");
 
 		// menu begin
-		JMenuBar menuBar = new JMenuBar();
-		setJMenuBar(menuBar);
+		JMenuBar menubar = new JMenuBar();
+		setJMenuBar(menubar);
 
-		// add menu item
-		JMenu scanMenu = new JMenu("Scan");
+		JMenu scanMenu = new JMenu("File");
+
 		JMenu gotoMenu = new JMenu("Go to");
 		JMenu commandsMenu = new JMenu("Commands");
-		JMenu favoritesMenu = new JMenu("Favorites");
+		JMenu favoritesMenu = new JMenu("Favorite");
 		JMenu toolsMenu = new JMenu("Tools");
 		JMenu helpMenu = new JMenu("Help");
 
-		menuBar.add(scanMenu);
-		menuBar.add(gotoMenu);
-		menuBar.add(commandsMenu);
-		menuBar.add(favoritesMenu);
-		menuBar.add(toolsMenu);
-		menuBar.add(helpMenu);
+		menubar.add(scanMenu);
+		menubar.add(gotoMenu);
+		menubar.add(commandsMenu);
+		menubar.add(favoritesMenu);
+		menubar.add(toolsMenu);
+		menubar.add(helpMenu);
 
-		// set scan menu
 		JMenuItem loadFromFileAction = new JMenuItem("Load from file...");
 		JMenuItem exportAllAction = new JMenuItem("Export all...");
 		JMenuItem exportSelectionAction = new JMenuItem("Export selection...");
@@ -74,78 +70,52 @@ public class IPScannerEx extends JFrame {
 		scanMenu.add(loadFromFileAction);
 		scanMenu.add(exportAllAction);
 		scanMenu.add(exportSelectionAction);
-		scanMenu.addSeparator();
 		scanMenu.add(quitAction);
 
-		// set goto menu
 		JMenuItem nextAliveHostAction = new JMenuItem("Next alive host");
 		JMenuItem nextOpenPortAction = new JMenuItem("Next open port");
-		JMenuItem nextDeadHostAction = new JMenuItem("Next dead host");
-		JMenuItem preAliveHostAction = new JMenuItem("Previous alive host");
-		JMenuItem preOpenPortAction = new JMenuItem("Previous open port");
-		JMenuItem preDeadHostAction = new JMenuItem("Previous dead host");
+		JMenuItem NextDeadHostAction = new JMenuItem("Next dead host");
+		JMenuItem previousAliveHostAction = new JMenuItem("previous alive host");
+		JMenuItem previousOpenPortAction = new JMenuItem("previous open port");
+		JMenuItem previousDeadHostAction = new JMenuItem("Previous dead host");
 		JMenuItem findAction = new JMenuItem("Find...");
 
 		gotoMenu.add(nextAliveHostAction);
 		gotoMenu.add(nextOpenPortAction);
-		gotoMenu.add(nextDeadHostAction);
+		gotoMenu.add(NextDeadHostAction);
 		gotoMenu.addSeparator();
-		gotoMenu.add(preAliveHostAction);
-		gotoMenu.add(preOpenPortAction);
-		gotoMenu.add(preDeadHostAction);
+		gotoMenu.add(previousAliveHostAction);
+		gotoMenu.add(previousOpenPortAction);
+		gotoMenu.add(previousDeadHostAction);
 		gotoMenu.addSeparator();
 		gotoMenu.add(findAction);
 
-		// set commands menu-commands
 		JMenuItem showDetailsAction = new JMenuItem("Show details");
-		JMenuItem rescanIPAction = new JMenuItem("Rescan IP(s)");
-		JMenuItem deleteIPAction = new JMenuItem("Delete IP(s)");
+		JMenuItem rescanIPsAction = new JMenuItem("Rescan IP(s)");
+		JMenuItem deleteIPsAction = new JMenuItem("Delete IP(s)");
 		JMenuItem copyIPAction = new JMenuItem("Copy IP");
-		JMenuItem copyDetailsAction = new JMenuItem("Copy Details");
-		JMenu openAction = new JMenu("Open");
+		JMenuItem copyDetailsAction = new JMenuItem("Copy details");
+		JMenuItem openaction = new JMenuItem("Open");
 
 		commandsMenu.add(showDetailsAction);
 		commandsMenu.addSeparator();
-		commandsMenu.add(rescanIPAction);
-		commandsMenu.add(deleteIPAction);
+		commandsMenu.add(rescanIPsAction);
+		commandsMenu.add(deleteIPsAction);
+		commandsMenu.addSeparator();
 		commandsMenu.add(copyIPAction);
 		commandsMenu.add(copyDetailsAction);
 		commandsMenu.addSeparator();
-		commandsMenu.add(openAction);
+		commandsMenu.add(openaction);
 
-		// set commands menu-open
-		JMenuItem editOpenersAction = new JMenuItem("Edit openers...");
-		JMenuItem windowsSharesAction = new JMenuItem("Windows Shares");
-		JMenuItem webBrowserAction = new JMenuItem("Web Browser");
-		JMenuItem FTPAction = new JMenuItem("FTP");
-		JMenuItem telnetAction = new JMenuItem("Telnet");
-		JMenuItem pingAction = new JMenuItem("Ping");
-		JMenuItem traceRouteAction = new JMenuItem("Trace route");
-		JMenuItem geoLocateAction = new JMenuItem("Geo locate");
-		JMenuItem emailSampleAction = new JMenuItem("E-mail sample");
-
-		openAction.add(editOpenersAction);
-		openAction.addSeparator();
-		openAction.add(windowsSharesAction);
-		openAction.add(webBrowserAction);
-		openAction.add(FTPAction);
-		openAction.add(telnetAction);
-		openAction.add(pingAction);
-		openAction.add(traceRouteAction);
-		openAction.add(geoLocateAction);
-		openAction.add(emailSampleAction);
-
-		// set favorites menu
 		JMenuItem addCurrentAction = new JMenuItem("Add current...");
 		JMenuItem manageFavoritesAction = new JMenuItem("Manage favorites...");
 
 		favoritesMenu.add(addCurrentAction);
 		favoritesMenu.add(manageFavoritesAction);
 
-		// set tools menu-tools
 		JMenuItem preferencesAction = new JMenuItem("Preferences...");
 		JMenuItem fetchersAction = new JMenuItem("Fetchers...");
-		JMenu selectionAction = new JMenu("Selection");
+		JMenuItem selectionAction = new JMenuItem("Selection");
 		JMenuItem scanStatisticsAction = new JMenuItem("Scan statistics");
 
 		toolsMenu.add(preferencesAction);
@@ -154,244 +124,167 @@ public class IPScannerEx extends JFrame {
 		toolsMenu.add(selectionAction);
 		toolsMenu.add(scanStatisticsAction);
 
-		// set tools menu-selection
-		JMenuItem aliveHostsAction = new JMenuItem("Alive hosts");
-		JMenuItem deadHostsAction = new JMenuItem("Dead hosts");
-		JMenuItem withOpenPortsAction = new JMenuItem("With open ports");
-		JMenuItem withoutOpenPortsAction = new JMenuItem("Without open ports");
-		JMenuItem invertSelectionAction = new JMenuItem("Invert selection");
-
-		selectionAction.add(aliveHostsAction);
-		selectionAction.add(deadHostsAction);
-		selectionAction.add(withOpenPortsAction);
-		selectionAction.add(withoutOpenPortsAction);
-		selectionAction.addSeparator();
-		selectionAction.add(invertSelectionAction);
-
-		// set help menu
-		JMenuItem gettingStartedAction = new JMenuItem("Getting Started");
-		JMenuItem officialWebsiteAction = new JMenuItem("Official Website");
-		JMenuItem FAQAction = new JMenuItem("FAQ");
+		JMenuItem gettingStatedAction = new JMenuItem("Getting Stated");
+		JMenuItem officialWebsiteAction = new JMenuItem("Official website");
+		JMenuItem faqAction = new JMenuItem("FAQ");
 		JMenuItem reportAnIssueAction = new JMenuItem("Report an issue");
 		JMenuItem pluginsAction = new JMenuItem("Plugins");
+		JMenuItem commandLineUsageAction = new JMenuItem("Command-line usage");
+		JMenuItem checkForNewerVersionAction = new JMenuItem("Check for newer version...");
+		JMenuItem aboutAction = new JMenuItem("About");
 
-		// set quit action
+		helpMenu.add(gettingStatedAction);
+		helpMenu.add(officialWebsiteAction);
+		helpMenu.add(faqAction);
+		helpMenu.add(reportAnIssueAction);
+		helpMenu.add(pluginsAction);
+		helpMenu.add(commandLineUsageAction);
+		helpMenu.add(checkForNewerVersionAction);
+		helpMenu.add(aboutAction);
 
 		quitAction.addActionListener(new ActionListener() {
+
 			@Override
 			public void actionPerformed(ActionEvent e) {
+				// TODO Auto-generated method stub
 				System.exit(0);
 			}
 		});
 		// menu end
 
-		// ----------------------
+		// statusbar begin
 
-		// status bar begin
-		JPanel statusPanel = new JPanel();
+		JPanel statusPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
 		statusPanel.setBorder(new BevelBorder(BevelBorder.LOWERED));
-		add(statusPanel, BorderLayout.SOUTH);
-
+		getContentPane().add(statusPanel, BorderLayout.SOUTH);
 		JLabel readyLabel = new JLabel("Ready");
 		JLabel displayLabel = new JLabel("Display All");
-		JLabel threadLabel = new JLabel("Thread : " + threads);
-
+		JLabel threadLabel = new JLabel("Thread: 0");
 		statusPanel.add(readyLabel);
 		statusPanel.add(displayLabel);
 		statusPanel.add(threadLabel);
-
-		readyLabel.setBorder(new BevelBorder(BevelBorder.RAISED));
-		displayLabel.setBorder(new BevelBorder(BevelBorder.RAISED));
-		threadLabel.setBorder(new BevelBorder(BevelBorder.RAISED));
-
+		readyLabel.setBorder(new BevelBorder(BevelBorder.LOWERED));
+		displayLabel.setBorder(new BevelBorder(BevelBorder.LOWERED));
+		threadLabel.setBorder(new BevelBorder(BevelBorder.LOWERED));
 		readyLabel.setPreferredSize(new Dimension(300, 20));
 		displayLabel.setPreferredSize(new Dimension(150, 20));
 		threadLabel.setPreferredSize(new Dimension(150, 20));
-		// status bar end
-
-		// ----------------------
+		// statusbar end
 
 		// table begin
-		String titles[] = new String[] { "IP", "Ping", "Hostname", "TTL", "Ports[0+]" };
-		Object[][] stats = initializeTableData();
+		String titles[] = new String[] { "IP", "Ping", "TTL", "Hostname", "Ports[0+]" };
+		jTable = new JTable(stats, titles);
 
-		JTable ipTable = new JTable(stats, titles);
-
-		JScrollPane sp = new JScrollPane(ipTable);
-		add(sp, BorderLayout.CENTER);
+		JScrollPane sp = new JScrollPane(jTable);
+		getContentPane().add(sp, BorderLayout.CENTER);
 		// table end
 
-		// ----------------------
-
 		// toolbar begin
-		InetAddress getLocalHost=null;
-		try {
-			getLocalHost= InetAddress.getLocalHost();
-		} catch (UnknownHostException errunknownhost) {
-			errunknownhost.printStackTrace();
-		}
-		
-		String myIp=null;
-		String myHostName=null;
-		myIp=getLocalHost.getHostAddress();
-		myHostName=getLocalHost.getHostName();
-		
-		String fixedIp = myIp.substring(0, myIp.lastIndexOf(".")+1);
-		
-		String ipRangeStartText = "192.168.0.0";
-		String ipRangeEndText = "192.168.0.255";
-
 		JToolBar toolbar1 = new JToolBar();
 		toolbar1.setLayout(new FlowLayout(FlowLayout.LEFT));
 		JToolBar toolbar2 = new JToolBar();
 		toolbar2.setLayout(new FlowLayout(FlowLayout.LEFT));
 
-		JLabel IPRangeStart = new JLabel("IP Range : ");
-		JTextField tfRangeStart = new JTextField(ipRangeStartText, 10);
-		JLabel IPRangeEnd = new JLabel("to");
-		JTextField tfRangeEnd = new JTextField(ipRangeEndText, 10);
+		JLabel IpRangStart = new JLabel("IP Range:");
+		JTextField tfRangeStart = new JTextField(10);
+		JLabel IpRangend = new JLabel("to ");
+		JTextField tfRangend = new JTextField(10);
 
-		tfRangeStart.setPreferredSize(new Dimension(30, 30));
-		tfRangeEnd.setPreferredSize(new Dimension(90, 30));
+		tfRangend.setPreferredSize(new Dimension(90, 30));
+		tfRangeStart.setPreferredSize(new Dimension(90, 30));
 
-		JLabel lbHostName = new JLabel("Hostname : ");
+		JLabel lbHostname = new JLabel("Hostname: ");
+		JTextField tfHostname = new JTextField(10);
+		JButton btup = new JButton("IP");
+		JComboBox cbOption = new JComboBox();
+		cbOption.addItem("/24");
+		cbOption.addItem("/26");
+		JButton btStart;
+		btStart = new JButton("Start");
+		btStart.setPreferredSize(new Dimension(31, 35));
 
-		JTextField tfHostName = new JTextField(myHostName, 10);
+		JButton btset;
 
-		JButton buttonIP = new JButton("IP" + "ก่");
+		btset = new JButton("set");
+		btset.setPreferredSize(new Dimension(35, 30));
 
-		// set buttonIP action
-		buttonIP.addActionListener(new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				try {
-					tfRangeStart.setText(InetAddress.getLocalHost().getHostAddress());
-					tfRangeEnd.setText(InetAddress.getLocalHost().getHostAddress());
-				} catch (UnknownHostException e) {
-					e.printStackTrace();
-				}
-			}
-		});
+		JButton Bar;
+		Bar = new JButton("menu");
+		Bar.setPreferredSize(new Dimension(45, 30));
 
-		JComboBox netMaskCombo = new JComboBox();
-
-		netMaskCombo.addItem("/24");
-		netMaskCombo.addItem("/26");
-		
-		JButton btStart = new JButton("Start");
-
-		tfHostName.setPreferredSize(new Dimension(90, 30));
-		buttonIP.setPreferredSize(new Dimension(40, 30));
-		netMaskCombo.setPreferredSize(new Dimension(90, 30));
+		tfHostname.setPreferredSize(new Dimension(90, 30));
+		btup.setPreferredSize(new Dimension(44, 30));
+		cbOption.setPreferredSize(new Dimension(90, 30));
 		btStart.setPreferredSize(new Dimension(90, 30));
 
-		toolbar1.add(IPRangeStart);
+		toolbar1.add(IpRangStart);
+
+		JPanel panel = new JPanel();
+		panel.setPreferredSize(new Dimension(5, 10));
+		toolbar1.add(panel);
 		toolbar1.add(tfRangeStart);
-		toolbar1.add(IPRangeEnd);
-		toolbar1.add(tfRangeEnd);
+		toolbar1.add(IpRangend);
+		toolbar1.add(tfRangend);
 
-		toolbar2.add(lbHostName);
-		toolbar2.add(tfHostName);
-		toolbar2.add(buttonIP);
-		toolbar2.add(netMaskCombo);
+		JComboBox comboBox = new JComboBox();
+		comboBox.setModel(new DefaultComboBoxModel(new String[] { "IP Range", "Random", "Text Pile" }));
+		toolbar1.add(comboBox);
+		toolbar1.add(btset);
+
+		toolbar2.add(lbHostname);
+		toolbar2.add(tfHostname);
+		toolbar2.add(btup);
+		toolbar2.add(cbOption);
 		toolbar2.add(btStart);
+		toolbar2.add(Bar);
 
-		JPanel toolBarPane = new JPanel(new BorderLayout());
-		toolBarPane.add(toolbar1, BorderLayout.NORTH);
-		toolBarPane.add(toolbar2, BorderLayout.SOUTH);
+		JPanel pane = new JPanel(new BorderLayout());
+		pane.add(toolbar1, BorderLayout.NORTH);
+		pane.add(toolbar2, BorderLayout.SOUTH);
 
-		add(toolBarPane, BorderLayout.NORTH);
+		getContentPane().add(pane, BorderLayout.NORTH);
+
 		// toolbar end
 
-		// set default option
-		setSize(700, 600);
+		String myIp = null;
+		String myHostname = null;
+		try {
+			InetAddress ia = InetAddress.getLocalHost();
+
+			myIp = ia.getHostAddress();
+			myHostname = ia.getHostName();
+		} catch (Exception e) {
+
+		}
+		String fixedIp = myIp.substring(0, myIp.lastIndexOf(".") + 1);
+		tfRangeStart.setText(fixedIp + "1");
+		tfRangend.setText(fixedIp + "254");
+		tfHostname.setText(myHostname);
+
+		// System.out.println(myIp + " " + myHostname);
+
+		setSize(700, 700);
 		setDefaultCloseOperation(EXIT_ON_CLOSE);
 		setVisible(true);
 
-		// set start button action
 		btStart.addActionListener(new ActionListener() {
+
 			@Override
-			public void actionPerformed(ActionEvent arg0) {
-				JOptionPane.showMessageDialog(null, "Start scanning...", "INFORMATION_MESSAGE", JOptionPane.INFORMATION_MESSAGE);
-				
-				Pinging[] pi = new Pinging[255];
-				for(int i=0; i<=254; i++) {
-					pi[i] = new Pinging(fixedIp + (i+1));
-					pi[i].start();
-				}
-				for(int i=0; i<=254; i++) {
-					Object[] msg = pi[i].getMsg();
-					if (msg[1] != null) {
-						//port SCanner
-						
-						ExecutorService es = Executors.newFixedThreadPool(20);
-						String ip = "127.0.0.1";
-						int timeout = 200;
-						ArrayList<Future<ScanResult>> futures = new ArrayList<>();
-						for (int port = 1; port <= 1024; port++) {
-							futures.add(portlsOpen(es, ip, port, timeout));
-						}
-						try {
-							es.awaitTermination(200L, TimeUnit.MILLISECONDS);
-							int openPorts = 0;
-							for (final Future<ScanResult> f: futures) {
-								if (f.get().isOpen()) {
-									openPorts++;
-									getPort = Integer.toString(f.get().getPort());
-									break;
-								}
-							}
-						} catch(Exception ee) {
-							ee.printStackTrace();
-						}
+			public void actionPerformed(ActionEvent e) {
+				JOptionPane.showMessageDialog(null, "Start scanning...", "INFORMATION_MESSAGE",
+						JOptionPane.INFORMATION_MESSAGE);
 
-						stats[i][4] = getPort;
-					}
-		
-					if (msg[1] == null) {
-						msg[3] = "[n/a]";
-						msg[1] = "[n/s]";
-						msg[2] = "[n/s]";
-						stats[i][4] = "[n/s]";
-					} else if (msg[3] == null) {
-						msg[2] = "[n/a]";
-					}
-					stats[i][0] = msg[0];
-					stats[i][1] = msg[3];
-					stats[i][2] = msg[1];
-					stats[i][3] = msg[2];
+				Pinging[] pi = new Pinging[254];
+				for (int i = 1; i <= 254; i++) {
+					pi[i - 1] = new Pinging(fixedIp + i, i - 1);
+					pi[i - 1].start();
 				}
-				ipTable.repaint();
-				JOptionPane.showMessageDialog(null, "Scanning complete!", "INFORMATION_MESSAGE", JOptionPane.INFORMATION_MESSAGE);
 
 			}
 		});
-		// start action end
-
-	}
-
-	public static Future<ScanResult> portlsOpen(final ExecutorService es, final String ip, final int port, final int timeout){
-		return es.submit(new Callable<ScanResult>() {
-			public ScanResult call() {
-				try {
-					Socket socket = new Socket();
-					socket.connect(new InetSocketAddress(ip, port), timeout);
-					socket.close();
-					return new ScanResult(port, true);
-				}catch (Exception ex) {
-					return new ScanResult(port, false);
-				}
-			}
-		});
-	}
-	
-	public Object[][] initializeTableData() {
-		Object[][] results = new Object[254][5];
-		return results;
 	}
 
 	public static void main(String[] args) {
-		new IPScannerEx();
+		IPScannerEx begin = new IPScannerEx();
 	}
-
 }
